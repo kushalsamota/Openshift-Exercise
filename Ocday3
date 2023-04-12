@@ -149,3 +149,119 @@ oc scale rc/mysql --replicas=1
 oc get pods
 oc delete rc mysql
 oc get all
+
+========================================
+Deployment exercise
+========================================
+oc project <username of yours>
+vim dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  labels:
+    app: mysql
+  namespace: <username of yours>
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: docker.io/mysql:5.6
+        
+save the file
+
+oc create -f dep.yaml
+oc get all
+oc set image deployment mysql-deployment mysql=docker.io/mysql:5.7  --record
+oc rollout history deployment mysql-deployment
+oc get all
+oc set image deployment mysql-deployment mysql=docker.io/mysql:8.0 --record
+oc rollout history deployment mysql-deployment
+oc get all
+oc rollout undo deployment mysql-deployment --to-revision=2
+oc rollout history deployment mysql-deployment
+
+oc delete deployment mysql-deployment
+
+
+
+###############################################
+
+secret practical
+vim dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: <username of yours>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: quay.io/kushalsamota/mysql
+        env:
+                - name: MYSQL_ROOT_PASSWORD
+                  valueFrom:
+                          secretKeyRef:
+                                  name: mysqlpassword
+                                  key: passwordofmysql
+                                  
+oc create secret generic mysqlpassword --from-literal=passwordofmysql=redhat 
+oc create -f dep.yaml
+oc describe deployment mysql-deployment
+oc describe secret mysqlpassword
+oc delete deployment mysql-deployment
+oc delete secret mysqlpassword
+
+#####################################
+configmap
+vim dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: <username of yours>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: quay.io/kushalsamota/mysql
+        env:
+                - name: MYSQL_ROOT_PASSWORD
+                  valueFrom:
+                          configMapKeyRef:
+                                  name: mysqlpassword
+                                  key: passwordofmysql
+ 
+ oc create configmap mysqlpassword --from-literal=passwordofmysql=redhat
+ oc get configmap
+ oc describe configmap mysqlpassword
+ oc create -f dep.yaml
+ oc describe deployment mysql-deployment
+ oc delete deployment mysql-deployment
+ oc delete configmap mysqlpassword
+ ====================================================
