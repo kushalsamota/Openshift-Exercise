@@ -1,0 +1,151 @@
+V.V.V.V IMPORTANT NOTE - Some container might not running and some commands wont execute. Kindly ignore them as we are going to do this in restricted env of DO180 labs.
+
+
+Go to workstation, login to student
+oc login -u <username) -p <password> <apiurl>
+======================================================================
+  
+oc get nodes
+oc get nodes -o wide
+oc get nodes --show-labels
+oc get node <nodename> -o yaml
+oc get node <nodename> -o yaml > node.yaml
+oc describe node <nodename>
+cat node.yaml
+
+oc new-project <username of yours>
+oc project
+  
+  
+usernumber is your user1 or user2 accordingly... Change this in every yaml file. 
+  
+
+oc project <username of yours>
+vim pod.yaml
+======================================
+apiVersion: v1
+kind: Pod
+metadata:
+        name: apachepod
+        namespace: <username of yours>
+        labels:
+                env: prod
+                app: apache
+spec:
+        containers:
+                - name: firstcontainer
+                  image: quay.io/kushalsamota/httpd
+                  
+=====================================
+oc create -f pod.yaml
+oc get pods
+oc logs apachepod
+oc get pods -o wide
+oc get pods --show-labels
+oc describe pod apachepod
+oc get pod apachepod -o yaml > pod1.yaml
+vim pod1.yaml
+exit from file
+oc delete pod apachepod
+oc get pods
+
+#########################################################
+vim pod.yaml
+===========================================
+apiVersion: v1
+kind: Pod
+metadata:
+        name: apachepod
+        namespace: <username of yours>
+        labels:
+                env: prod
+                app: apache
+spec:
+        containers:
+                - name: firstcontainer
+                  image: quay.io/kushalsamota/httpd
+                - name: secondcontainer
+                  image: quay.io/kushalsamota/mysql
+                  env:
+                          - name: MYSQL_ROOT_PASSWORD
+                            value: redhat
+==============================================
+save the file
+
+oc create -f pod.yaml
+oc get pods === two container will be running in a pod
+oc get pods -o wide
+oc describe pod apachepod
+oc logs apachepod -c firstcontainer
+oc logs apachepod -c secondcontainer
+oc rsh apachepod
+exit
+oc exec -it apachepod -c secondcontainer bash
+exit
+oc logs apachepod -c firstcontainer
+oc logs apachepod -c secondcontainer
+oc delete pod apachepod
+oc get pods
+
+##################################################
+vim pod.yaml
+=============================================
+apiVersion: v1
+kind: Pod
+metadata:
+        name: apachepod
+        namespace: <username of yours>
+        labels:
+                env: prod
+                app: apache
+spec:
+        volumes:
+                - name: myvol
+                  emptyDir: {}
+        containers:
+                - name: firstcontainer
+                  image: quay.io/kushalsamota/httpd
+                  volumeMounts:
+                          - name: myvol
+                            mountPath: /usr/local/apache2/htdocs
+========================================
+oc create -f pod.yaml
+oc get pods
+oc describe pod apachepod
+oc delete pod apachepod
+
+#########################################
+===================================
+vim rc.yaml
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: mysql
+  namespace: <username of yours>
+spec:
+  replicas: 5
+  selector:
+    app: mysql
+  template:
+    metadata:
+      name: mysqlpod
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysqlcontainer
+        image: quay.io/kushalsamota/mysql
+        env:
+                - name: MYSQL_ROOT_PASSWORD
+                  value: redhat
+                  
+save the file
+======================================
+oc create -f rc.yaml
+oc get all
+oc scale rc/mysql --replicas=10
+oc get pods
+oc scale rc/mysql --replicas=1
+oc get pods
+oc delete rc mysql
+oc get all
